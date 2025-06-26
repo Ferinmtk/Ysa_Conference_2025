@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Attendee - YSA 2025</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='add.css') }}">
+</head>
+<body>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="flash-container">
+            {% for category, message in messages %}
+                <div class="flash-message {{ 'flash-' + category }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="form-container">
+        <h1>Add New Attendee</h1>
+        <form method="POST" action="/add">
+            <label>Full Name:</label>
+            <input type="text" name="full_name" required>
+
+            <label>Email:</label>
+            <input type="email" name="email">
+
+            <label>Phone:</label>
+            <input type="text" name="phone">
+
+            <label for="stake">Stake:</label>
+            <select id="stake" name="stake" required>
+                <option value="">Select Stake</option>
+                <option value="Nairobi Kenya East Stake">Nairobi Kenya East Stake</option>
+                <option value="Nairobi Kenya West Stake">Nairobi Kenya West Stake</option>
+                <option value="Nairobi Kenya South Stake">Nairobi Kenya South Stake</option>
+            </select>
+
+            <label for="ward">Ward/Branch:</label>
+            <select id="ward" name="ward" required>
+                <option value="">Select Ward/Branch</option>
+                <!-- Dynamically populated -->
+            </select>
+
+            <label>Registration ID (e.g., YSA2025-WARD1-001):</label>
+            <input type="text" name="registration_id" required>
+
+            <button type="submit">Add Attendee</button>
+        </form>
+    </div>
+
+    <script>
+        const stakeToWards = {
+            "Nairobi Kenya East Stake": [
+                "Githurai Ward",
+                "Kayole First Ward",
+                "Kayole Second Ward",
+                "Lucky Summer Ward",
+                "Zimmerman Ward",
+                "Gigiri Ward",
+                "Upper Hill Ward",
+                "Dandora Branch"
+            ],
+            "Nairobi Kenya West Stake": [
+                "Kabiria Ward",
+                "Langata Ward",
+                "Mountain View Ward",
+                "Ongata Rongai Ward",
+                "Riruta Ward",
+                "Ngong Branch",
+                "Kikuyu Branch"
+            ],
+            "Nairobi Kenya South Stake": [
+                "Athi River First Ward",
+                "Kitengela Ward",
+                "Nairobi First Ward",
+                "Nairobi Second Ward",
+                "South B Ward",
+                "Athi River Second Branch",
+                "Mlolongo Branch",
+                "Ruai Branch"
+            ]
+        };
+
+        const stakeSelect = document.getElementById("stake");
+        const wardSelect = document.getElementById("ward");
+
+        stakeSelect.addEventListener("change", function () {
+            const selectedStake = this.value;
+            const wards = stakeToWards[selectedStake] || [];
+
+            // Reset ward dropdown
+            wardSelect.innerHTML = '<option value="">Select Ward/Branch</option>';
+
+            // Populate wards
+            wards.forEach(ward => {
+                const option = document.createElement("option");
+                option.value = ward;
+                option.textContent = ward;
+                wardSelect.appendChild(option);
+            });
+        });
+
+        // Flash message auto-hide
+        setTimeout(() => {
+            const messages = document.querySelectorAll(".flash-message");
+            messages.forEach(msg => {
+                msg.style.opacity = "0";
+                setTimeout(() => msg.style.display = "none", 500);
+            });
+        }, 4000);
+    </script>
+
+</body>
+</html>

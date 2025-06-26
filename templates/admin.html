@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Panel - YSA 2025</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}">
+    <style>
+        .stake-toggle {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+            justify-content: center;
+        }
+
+        .stake-pill {
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            background-color: #f0f0f0;
+            color: #222;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .stake-pill:hover {
+            background-color: #d3f9d8;
+        }
+
+        .stake-pill.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+<div class="day-links">
+    <strong>View Day Attendance:</strong>
+    <a href="{{ url_for('attendance_day', day_number=1) }}">Day 1</a> |
+    <a href="{{ url_for('attendance_day', day_number=2) }}">Day 2</a> |
+    <a href="{{ url_for('attendance_day', day_number=3) }}">Day 3</a>
+</div>
+
+<div class="container">
+    <h1>YSA 2025 Attendee List</h1>
+
+    <input type="text" id="searchInput" placeholder="Search by name, ward, or stake...">
+    <button onclick="exportCSV()">Export CSV</button>
+
+    <!-- Pill toggle buttons -->
+    <div class="stake-toggle">
+        {% for stake in grouped_attendees.keys() %}
+            {% set stake_id = stake|replace(" ", "_") %}
+            <button class="stake-pill" data-stake="{{ stake_id }}">{{ stake }}</button>
+        {% endfor %}
+        <button class="stake-pill" data-stake="all">All Stakes</button>
+    </div>
+    
+
+    {% for stake, wards in grouped_attendees.items() %}
+        {% set stake_id = stake|replace(" ", "_") %}
+        <div class="stake-group" data-stake="{{ stake_id }}">
+            <h2 class="stake-header" onclick="toggleStake('{{ stake_id }}')" id="header-{{ stake_id }}">
+                {{ stake }}
+                <span class="toggle-icon" id="toggle-icon-{{ stake_id }}">[-]</span>
+            </h2>
+            <div class="stake-content" id="stake-{{ stake_id }}">
+                {% for ward, attendees in wards.items() %}
+                    <div class="ward-group">
+                        <h3>{{ ward }} ({{ attendees|length }} attendees)</h3>
+                        <table>
+                            <thead>
+                            <tr>
+                                <th>Full Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Registration ID</th>
+                                <th>Time In</th>
+                                <th>Time Out</th>
+                                <th>Actions</th>
+                                <th>Days Attended</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for attendee in attendees|sort(attribute='full_name') %}
+                                <tr>
+                                    <td>{{ attendee.full_name }}</td>
+                                    <td>{{ attendee.email }}</td>
+                                    <td>{{ attendee.phone }}</td>
+                                    <td>{{ attendee.registration_id }}</td>
+                                    <td>{{ attendee.time_in or '' }}</td>
+                                    <td>{{ attendee.time_out or '' }}</td>
+                                    <td>
+                                        <form action="{{ url_for('check_in', registration_id=attendee.registration_id) }}" method="post" class="inline-form">
+                                            <button type="submit">Check In</button>
+                                        </form>
+                                        <form action="{{ url_for('check_out', registration_id=attendee.registration_id) }}" method="post" class="inline-form">
+                                            <button type="submit">Check Out</button>
+                                        </form>
+                                        <br>
+                                        {% for day in range(1, 4) %}
+                                            {% set key = 'day_' ~ day %}
+                                            <form action="{{ url_for('checkin_day', registration_id=attendee.registration_id, day_number=day) }}" method="post" class="inline-form">
+                                                <button type="submit"
+                                                        class="day-button {% if attendee.attendance and key in attendee.attendance %}present{% else %}absent{% endif %}">
+                                                    Day {{ day }}
+                                                </button>
+                                            </form>
+                                        {% endfor %}
+                                    </td>
+                                    <td>
+                                        {% if attendee.attendance %}
+                                            {% for i in range(1, 4) %}
+                                                {% set key = 'day_' ~ i %}
+                                                {% if key in attendee.attendance %}
+                                                    Day {{ i }}: ✓<br>
+                                                {% else %}
+                                                    Day {{ i }}: ✗<br>
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+<script>
+    // Scroll restore
+    window.addEventListener("load", function () {
+        const scrollY = localStorage.getItem("scrollY");
+        if (scrollY) {
+            window.scrollTo(0, parseInt(scrollY));
+            localStorage.removeItem("scrollY");
+        }
+
+        const savedStake = localStorage.getItem("selectedStake") || "all";
+        activateStakeFilter(savedStake);
+    });
+
+    window.addEventListener("beforeunload", function () {
+        localStorage.setItem("scrollY", window.scrollY);
+    });
+
+    // Toggle stake sections
+    function toggleStake(stakeId) {
+        const content = document.getElementById("stake-" + stakeId);
+        const icon = document.getElementById("toggle-icon-" + stakeId);
+        const isVisible = content.style.display !== "none";
+
+        content.style.display = isVisible ? "none" : "block";
+        icon.textContent = isVisible ? "[+]" : "[-]";
+    }
+
+    // Search filter
+    document.getElementById("searchInput").addEventListener("keyup", function () {
+        const searchValue = this.value.toLowerCase();
+        const rows = document.querySelectorAll("table tbody tr");
+        rows.forEach(row => {
+            const text = row.innerText.toLowerCase();
+            row.style.display = text.includes(searchValue) ? "" : "none";
+        });
+    });
+
+    // CSV Export
+    function exportCSV() {
+        let csv = "Full Name,Email,Phone,Registration ID,Time In,Time Out\n";
+        const rows = document.querySelectorAll("table tbody tr");
+        rows.forEach(row => {
+            const cells = row.querySelectorAll("td");
+            const data = Array.from(cells).slice(0, 6).map(cell => `"${cell.innerText}"`).join(",");
+            csv += data + "\n";
+        });
+        const blob = new Blob([csv], { type: "text/csv" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "ysa_attendees.csv";
+        link.click();
+    }
+
+    // Stake filter pill
+    function activateStakeFilter(stakeId) {
+        document.querySelectorAll(".stake-pill").forEach(btn => {
+            btn.classList.toggle("active", btn.dataset.stake === stakeId);
+        });
+
+        document.querySelectorAll(".stake-group").forEach(group => {
+            const stake = group.dataset.stake;
+            group.style.display = (stakeId === "all" || stake === stakeId) ? "block" : "none";
+        });
+
+        localStorage.setItem("selectedStake", stakeId);
+    }
+
+    document.querySelectorAll(".stake-pill").forEach(btn => {
+        btn.addEventListener("click", () => {
+            activateStakeFilter(btn.dataset.stake);
+        });
+    });
+</script>
+</body>
+</html>

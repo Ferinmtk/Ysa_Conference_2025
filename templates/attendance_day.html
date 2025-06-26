@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Day {{ day_number }} Attendance - YSA 2025</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}">
+</head>
+<body>
+<div class="container">
+    <h1>Day {{ day_number }} Attendance ({{ target_day }})</h1>
+    
+    <div>
+        <a href="{{ url_for('attendance_day', day_number=1) }}"><button>Day 1</button></a>
+        <a href="{{ url_for('attendance_day', day_number=2) }}"><button>Day 2</button></a>
+        <a href="{{ url_for('attendance_day', day_number=3) }}"><button>Day 3</button></a>
+    </div>
+
+    <h2>✅ Checked In ({{ checked_in|length }})</h2>
+    <table>
+        <thead>
+            <tr><th>Name</th><th>Ward</th><th>Stake</th><th>Phone</th></tr>
+        </thead>
+        <tbody>
+            {% for a in checked_in %}
+            <tr><td>{{ a.full_name }}</td><td>{{ a.ward }}</td><td>{{ a.stake }}</td><td>{{ a.phone }}</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>❌ Not Checked In ({{ not_checked_in|length }})</h2>
+    <table>
+        <thead>
+            <tr><th>Name</th><th>Ward</th><th>Stake</th><th>Phone</th></tr>
+        </thead>
+        <tbody>
+            {% for a in not_checked_in %}
+            <tr><td>{{ a.full_name }}</td><td>{{ a.ward }}</td><td>{{ a.stake }}</td><td>{{ a.phone }}</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+</body>
+</html>
